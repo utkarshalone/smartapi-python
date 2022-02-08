@@ -8,8 +8,8 @@
 from __future__ import print_function
 
 import struct
-import threading
-import time
+# import threading
+# import time
 import ssl
 import json
 
@@ -26,7 +26,7 @@ class SmartWebSocketV2(object):
     HEAR_BEAT_INTERVAL = 30
     LITTLE_ENDIAN_BYTE_ORDER = "<"
     RESUBSCRIBE_FLAG = False
-    HB_THREAD_FLAG = True
+    # HB_THREAD_FLAG = True
     MAX_RETRY_ATTEMPT = 1
 
     # Available Actions
@@ -46,6 +46,13 @@ class SmartWebSocketV2(object):
     MCX_FO = 5
     NCX_FO = 7
     CDE_FO = 13
+
+    # Subscription Mode Map
+    SUBSCRIPTION_MODE_MAP = {
+        1: "LTP",
+        2: "QUOTE",
+        3: "SNAP_QUOTE"
+    }
 
     wsapp = None
     input_request_dict = {}
@@ -97,16 +104,22 @@ class SmartWebSocketV2(object):
             self.on_data(wsapp, data)
 
     def _on_open(self, wsapp):
-        self.HB_THREAD_FLAG = True
-        thread = threading.Thread(target=self.run, args=())
-        thread.daemon = True
-        thread.start()
+        # self.HB_THREAD_FLAG = True
+        # thread = threading.Thread(target=self.run, args=())
+        # thread.daemon = True
+        # thread.start()
 
         if self.RESUBSCRIBE_FLAG:
             self.resubscribe()
         else:
             self.RESUBSCRIBE_FLAG = True
             self.on_open(wsapp)
+
+    def _on_pong(self, wsapp, data):
+        print("In on pong function==> ", data)
+
+    def _on_ping(self, wsapp, data):
+        print("In on ping function==> ", data)
 
     def subscribe(self, correlation_id, mode, token_list):
         """
@@ -248,8 +261,10 @@ class SmartWebSocketV2(object):
                 "x-feed-token": self.feed_token
             }
             self.wsapp = websocket.WebSocketApp(self.ROOT_URI, header=headers, on_open=self._on_open,
-                                                on_error=self._on_error, on_close=self._on_close, on_data=self._on_data)
-            self.wsapp.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
+                                                on_error=self._on_error, on_close=self._on_close, on_data=self._on_data,
+                                                on_ping=self._on_ping, on_pong=self._on_pong)
+            self.wsapp.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE}, ping_interval=self.HEAR_BEAT_INTERVAL,
+                                   ping_payload=self.HEART_BEAT_MESSAGE)
         except Exception as e:
             raise e
 
@@ -258,15 +273,15 @@ class SmartWebSocketV2(object):
             Closes the connection
         """
         self.RESUBSCRIBE_FLAG = False
-        self.HB_THREAD_FLAG = False
+        # self.HB_THREAD_FLAG = False
         self.wsapp.close()
 
-    def run(self):
-        while True:
-            if not self.HB_THREAD_FLAG:
-                break
-            self.send_heart_beat()
-            time.sleep(self.HEAR_BEAT_INTERVAL)
+    # def run(self):
+    #     while True:
+    #         if not self.HB_THREAD_FLAG:
+    #             break
+    #         self.send_heart_beat()
+    #         time.sleep(self.HEAR_BEAT_INTERVAL)
 
     def send_heart_beat(self):
         try:
@@ -283,7 +298,7 @@ class SmartWebSocketV2(object):
             self.connect()
 
     def _on_close(self, wsapp):
-        self.HB_THREAD_FLAG = False
+        # self.HB_THREAD_FLAG = False
         self.on_close(wsapp)
 
     def _parse_binary_data(self, binary_data):
@@ -296,6 +311,8 @@ class SmartWebSocketV2(object):
                 "exchange_timestamp": self._unpack_data(binary_data, 35, 43, byte_format="q")[0],
                 "last_traded_price": self._unpack_data(binary_data, 43, 51, byte_format="q")[0]
             }
+
+            parsed_data["subscription_mode_val"] = self.SUBSCRIPTION_MODE_MAP.get(parsed_data["subscription_mode"])
 
             if parsed_data["subscription_mode"] in [self.QUOTE, self.SNAP_QUOTE]:
                 parsed_data["last_traded_quantity"] = self._unpack_data(binary_data, 51, 59, byte_format="q")[0]
@@ -386,11 +403,6 @@ class SmartWebSocketV2(object):
 
     def on_open(self, wsapp):
         pass
-        # correlation_id = "nishant_123_qwerty"
-        # action = 1
-        # mode = 3
-        # token_list = [{"exchangeType": 1, "tokens": ["10626"]}]
-        # self.subscribe(correlation_id, action, mode, token_list)
 
     def on_error(self):
         pass

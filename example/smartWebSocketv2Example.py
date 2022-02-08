@@ -18,12 +18,12 @@ FEED_TOKEN = '099775688'
 correlation_id = "nishant_123_qwerty"
 action = 1
 mode = 3
-# token_list = [{"exchangeType": 1, "tokens": ["10626", "5290"]},
-#               {"exchangeType": 5, "tokens": ["234230", "234235", "234219"]}]
+token_list = [{"exchangeType": 1, "tokens": ["10626", "5290"]},
+              {"exchangeType": 5, "tokens": ["234230", "234235", "234219"]}]
 #
 # token_list2 = [{"exchangeType": 5, "tokens": ["114", "115"]}]
 
-token_list = [{"exchangeType": 3, "tokens": ["500209"]}]
+# token_list = [{"exchangeType": 1, "tokens": ["26009"]}]
 
 sws = SmartWebSocketV2(AUTH_TOKEN, API_KEY, CLIENT_CODE, FEED_TOKEN)
 
@@ -35,7 +35,8 @@ def on_data(wsapp, message):
 def on_open(wsapp):
     print("on open")
     sws.subscribe(correlation_id, mode, token_list)
-    # sws.subscribe(correlation_id, mode, token_list2)
+    # sws.subscribe(correlation_id, 3, token_list)
+    # sws.unsubscribe()
 
 
 def on_error(wsapp, error):
