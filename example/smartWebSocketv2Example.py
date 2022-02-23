@@ -46,3 +46,5 @@ sws.on_error = on_error
 sws.on_close = on_close
 
 sws.connect()
+
+
