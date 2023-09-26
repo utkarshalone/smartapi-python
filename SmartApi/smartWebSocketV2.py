@@ -13,7 +13,7 @@ class SmartWebSocketV2(object):
     SmartAPI Web Socket version 2
     """
 
-    ROOT_URI = "ws://smartapisocket.angelone.in/smart-stream"
+    ROOT_URI = "wss://smartapisocket.angelone.in/smart-stream"
     HEART_BEAT_MESSAGE = "ping"
     HEART_BEAT_INTERVAL = 10  # Adjusted to 10s
     LITTLE_ENDIAN_BYTE_ORDER = "<"
