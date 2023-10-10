@@ -28,6 +28,7 @@ class SmartWebSocketV2(object):
     LTP_MODE = 1
     QUOTE = 2
     SNAP_QUOTE = 3
+    DEPTH = 4
 
     # Exchange Type
     NSE_CM = 1
@@ -42,7 +43,8 @@ class SmartWebSocketV2(object):
     SUBSCRIPTION_MODE_MAP = {
         1: "LTP",
         2: "QUOTE",
-        3: "SNAP_QUOTE"
+        3: "SNAP_QUOTE",
+        4: "DEPTH"
     }
 
     wsapp = None
@@ -357,8 +359,7 @@ class SmartWebSocketV2(object):
             if parsed_data["subscription_mode"] == self.SNAP_QUOTE:
                 parsed_data["last_traded_timestamp"] = self._unpack_data(binary_data, 123, 131, byte_format="q")[0]
                 parsed_data["open_interest"] = self._unpack_data(binary_data, 131, 139, byte_format="q")[0]
-                parsed_data["open_interest_change_percentage"] = \
-                    self._unpack_data(binary_data, 139, 147, byte_format="q")[0]
+                parsed_data["open_interest_change_percentage"] = self._unpack_data(binary_data, 139, 147, byte_format="q")[0]
                 parsed_data["upper_circuit_limit"] = self._unpack_data(binary_data, 347, 355, byte_format="q")[0]
                 parsed_data["lower_circuit_limit"] = self._unpack_data(binary_data, 355, 363, byte_format="q")[0]
                 parsed_data["52_week_high_price"] = self._unpack_data(binary_data, 363, 371, byte_format="q")[0]
@@ -366,6 +367,16 @@ class SmartWebSocketV2(object):
                 best_5_buy_and_sell_data = self._parse_best_5_buy_and_sell_data(binary_data[147:347])
                 parsed_data["best_5_buy_data"] = best_5_buy_and_sell_data["best_5_sell_data"]
                 parsed_data["best_5_sell_data"] = best_5_buy_and_sell_data["best_5_buy_data"]
+
+            if parsed_data["subscription_mode"] == self.DEPTH:
+                parsed_data.pop("sequence_number", None)
+                parsed_data.pop("last_traded_price", None)
+                parsed_data.pop("subscription_mode_val", None)
+                parsed_data["packet_received_time"]=self._unpack_data(binary_data, 35, 43, byte_format="q")[0]
+                depth_data_start_index = 43
+                depth_20_data = self._parse_depth_20_buy_and_sell_data(binary_data[depth_data_start_index:])
+                parsed_data["depth_20_buy_data"] = depth_20_data["depth_20_buy_data"]
+                parsed_data["depth_20_sell_data"] = depth_20_data["depth_20_sell_data"]
 
             return parsed_data
         except Exception as e:
@@ -419,6 +430,36 @@ class SmartWebSocketV2(object):
         return {
             "best_5_buy_data": best_5_buy_data,
             "best_5_sell_data": best_5_sell_data
+        }
+
+    def _parse_depth_20_buy_and_sell_data(self, binary_data):
+        depth_20_buy_data = []
+        depth_20_sell_data = []
+
+        for i in range(20):
+            buy_start_idx = i * 10
+            sell_start_idx = 200 + i * 10
+
+            # Parse buy data
+            buy_packet_data = {
+                "quantity": self._unpack_data(binary_data, buy_start_idx, buy_start_idx + 4, byte_format="i")[0],
+                "price": self._unpack_data(binary_data, buy_start_idx + 4, buy_start_idx + 8, byte_format="i")[0],
+                "num_of_orders": self._unpack_data(binary_data, buy_start_idx + 8, buy_start_idx + 10, byte_format="h")[0],
+            }
+
+            # Parse sell data
+            sell_packet_data = {
+                "quantity": self._unpack_data(binary_data, sell_start_idx, sell_start_idx + 4, byte_format="i")[0],
+                "price": self._unpack_data(binary_data, sell_start_idx + 4, sell_start_idx + 8, byte_format="i")[0],
+                "num_of_orders": self._unpack_data(binary_data, sell_start_idx + 8, sell_start_idx + 10, byte_format="h")[0],
+            }
+
+            depth_20_buy_data.append(buy_packet_data)
+            depth_20_sell_data.append(sell_packet_data)
+
+        return {
+            "depth_20_buy_data": depth_20_buy_data,
+            "depth_20_sell_data": depth_20_sell_data
         }
 
     # def on_message(self, wsapp, message):
