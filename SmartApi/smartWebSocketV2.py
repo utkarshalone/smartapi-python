@@ -232,20 +232,33 @@ class SmartWebSocketV2(object):
                     tokens: list of string
         """
         try:
-            request_data = {
-                "correlationID": correlation_id,
-                "action": self.UNSUBSCRIBE_ACTION,
-                "params": {
-                    "mode": mode,
-                    "tokenList": token_list
+            total_tokens = sum(len(token["tokens"]) for token in token_list)
+            quota_limit = 50
+            if total_tokens > quota_limit:
+                raise Exception("Quota exceeded: You can subscribe to a maximum of {} tokens.".format(quota_limit))
+            else:
+                request_data = {
+                    "correlationID": correlation_id,
+                    "action": self.SUBSCRIBE_ACTION,
+                    "params": {
+                        "mode": mode,
+                        "tokenList": token_list
+                    }
                 }
-            }
 
-            self.input_request_dict.update(request_data)
-            self.input_request_dict.update(request_data)
-            self.wsapp.send(json.dumps(request_data))
-            self.RESUBSCRIBE_FLAG = True
+                if self.input_request_dict.get(mode, None) is None:
+                    self.input_request_dict[mode] = {}
+
+                for token in token_list:
+                    if token['exchangeType'] in self.input_request_dict[mode]:
+                        self.input_request_dict[mode][token['exchangeType']].extend(token["tokens"])
+                    else:
+                        self.input_request_dict[mode][token['exchangeType']] = token["tokens"]
+                self.wsapp.send(json.dumps(request_data))
+                self.RESUBSCRIBE_FLAG = True
+
         except Exception as e:
+            print("Error:", e)
             raise e
 
     def resubscribe(self):
