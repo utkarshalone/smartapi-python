@@ -28,6 +28,7 @@ class SmartWebSocketV2(object):
     LTP_MODE = 1
     QUOTE = 2
     SNAP_QUOTE = 3
+    DEPTH = 4
 
     # Exchange Type
     NSE_CM = 1
@@ -42,7 +43,8 @@ class SmartWebSocketV2(object):
     SUBSCRIPTION_MODE_MAP = {
         1: "LTP",
         2: "QUOTE",
-        3: "SNAP_QUOTE"
+        3: "SNAP_QUOTE",
+        4: "DEPTH"
     }
 
     wsapp = None
@@ -184,7 +186,8 @@ class SmartWebSocketV2(object):
                     "tokenList": token_list
                 }
             }
-            if self.input_request_dict.get(mode, None) is None:
+
+            if self.input_request_dict.get(mode) is None:
                 self.input_request_dict[mode] = {}
 
             for token in token_list:
@@ -192,9 +195,18 @@ class SmartWebSocketV2(object):
                     self.input_request_dict[mode][token['exchangeType']].extend(token["tokens"])
                 else:
                     self.input_request_dict[mode][token['exchangeType']] = token["tokens"]
+
+            if mode == self.DEPTH:
+                total_tokens = sum(len(token["tokens"]) for token in token_list)
+                quota_limit = 50
+                if total_tokens > quota_limit:
+                    raise Exception("Quota exceeded: You can subscribe to a maximum of {} tokens.".format(quota_limit))
+
             self.wsapp.send(json.dumps(request_data))
             self.RESUBSCRIBE_FLAG = True
+
         except Exception as e:
+            print("Error:", e)
             raise e
 
     def unsubscribe(self, correlation_id, mode, token_list):
@@ -230,20 +242,33 @@ class SmartWebSocketV2(object):
                     tokens: list of string
         """
         try:
-            request_data = {
-                "correlationID": correlation_id,
-                "action": self.UNSUBSCRIBE_ACTION,
-                "params": {
-                    "mode": mode,
-                    "tokenList": token_list
+            total_tokens = sum(len(token["tokens"]) for token in token_list)
+            quota_limit = 50
+            if total_tokens > quota_limit:
+                raise Exception("Quota exceeded: You can subscribe to a maximum of {} tokens.".format(quota_limit))
+            else:
+                request_data = {
+                    "correlationID": correlation_id,
+                    "action": self.SUBSCRIBE_ACTION,
+                    "params": {
+                        "mode": mode,
+                        "tokenList": token_list
+                    }
                 }
-            }
 
-            self.input_request_dict.update(request_data)
-            self.input_request_dict.update(request_data)
-            self.wsapp.send(json.dumps(request_data))
-            self.RESUBSCRIBE_FLAG = True
+                if self.input_request_dict.get(mode, None) is None:
+                    self.input_request_dict[mode] = {}
+
+                for token in token_list:
+                    if token['exchangeType'] in self.input_request_dict[mode]:
+                        self.input_request_dict[mode][token['exchangeType']].extend(token["tokens"])
+                    else:
+                        self.input_request_dict[mode][token['exchangeType']] = token["tokens"]
+                self.wsapp.send(json.dumps(request_data))
+                self.RESUBSCRIBE_FLAG = True
+
         except Exception as e:
+            print("Error:", e)
             raise e
 
     def resubscribe(self):
@@ -357,8 +382,7 @@ class SmartWebSocketV2(object):
             if parsed_data["subscription_mode"] == self.SNAP_QUOTE:
                 parsed_data["last_traded_timestamp"] = self._unpack_data(binary_data, 123, 131, byte_format="q")[0]
                 parsed_data["open_interest"] = self._unpack_data(binary_data, 131, 139, byte_format="q")[0]
-                parsed_data["open_interest_change_percentage"] = \
-                    self._unpack_data(binary_data, 139, 147, byte_format="q")[0]
+                parsed_data["open_interest_change_percentage"] = self._unpack_data(binary_data, 139, 147, byte_format="q")[0]
                 parsed_data["upper_circuit_limit"] = self._unpack_data(binary_data, 347, 355, byte_format="q")[0]
                 parsed_data["lower_circuit_limit"] = self._unpack_data(binary_data, 355, 363, byte_format="q")[0]
                 parsed_data["52_week_high_price"] = self._unpack_data(binary_data, 363, 371, byte_format="q")[0]
@@ -366,6 +390,16 @@ class SmartWebSocketV2(object):
                 best_5_buy_and_sell_data = self._parse_best_5_buy_and_sell_data(binary_data[147:347])
                 parsed_data["best_5_buy_data"] = best_5_buy_and_sell_data["best_5_sell_data"]
                 parsed_data["best_5_sell_data"] = best_5_buy_and_sell_data["best_5_buy_data"]
+
+            if parsed_data["subscription_mode"] == self.DEPTH:
+                parsed_data.pop("sequence_number", None)
+                parsed_data.pop("last_traded_price", None)
+                parsed_data.pop("subscription_mode_val", None)
+                parsed_data["packet_received_time"]=self._unpack_data(binary_data, 35, 43, byte_format="q")[0]
+                depth_data_start_index = 43
+                depth_20_data = self._parse_depth_20_buy_and_sell_data(binary_data[depth_data_start_index:])
+                parsed_data["depth_20_buy_data"] = depth_20_data["depth_20_buy_data"]
+                parsed_data["depth_20_sell_data"] = depth_20_data["depth_20_sell_data"]
 
             return parsed_data
         except Exception as e:
@@ -419,6 +453,36 @@ class SmartWebSocketV2(object):
         return {
             "best_5_buy_data": best_5_buy_data,
             "best_5_sell_data": best_5_sell_data
+        }
+
+    def _parse_depth_20_buy_and_sell_data(self, binary_data):
+        depth_20_buy_data = []
+        depth_20_sell_data = []
+
+        for i in range(20):
+            buy_start_idx = i * 10
+            sell_start_idx = 200 + i * 10
+
+            # Parse buy data
+            buy_packet_data = {
+                "quantity": self._unpack_data(binary_data, buy_start_idx, buy_start_idx + 4, byte_format="i")[0],
+                "price": self._unpack_data(binary_data, buy_start_idx + 4, buy_start_idx + 8, byte_format="i")[0],
+                "num_of_orders": self._unpack_data(binary_data, buy_start_idx + 8, buy_start_idx + 10, byte_format="h")[0],
+            }
+
+            # Parse sell data
+            sell_packet_data = {
+                "quantity": self._unpack_data(binary_data, sell_start_idx, sell_start_idx + 4, byte_format="i")[0],
+                "price": self._unpack_data(binary_data, sell_start_idx + 4, sell_start_idx + 8, byte_format="i")[0],
+                "num_of_orders": self._unpack_data(binary_data, sell_start_idx + 8, sell_start_idx + 10, byte_format="h")[0],
+            }
+
+            depth_20_buy_data.append(buy_packet_data)
+            depth_20_sell_data.append(sell_packet_data)
+
+        return {
+            "depth_20_buy_data": depth_20_buy_data,
+            "depth_20_sell_data": depth_20_sell_data
         }
 
     # def on_message(self, wsapp, message):
