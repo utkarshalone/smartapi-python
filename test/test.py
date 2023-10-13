@@ -70,6 +70,9 @@ print("Position :", pos)
 holdings=smartApi.holding()
 print("Holdings :", holdings)
 
+allholdings=smartApi.allholding()
+print("AllHoldings :", allholdings)
+
 exchange = "NSE"
 tradingsymbol = "SBIN-EQ"
 symboltoken = 3045
