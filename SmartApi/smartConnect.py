@@ -46,7 +46,8 @@ class SmartConnect(object):
 
         "api.candle.data":"/rest/secure/angelbroking/historical/v1/getCandleData",
         "api.market.data":"/rest/secure/angelbroking/market/v1/quote",
-        "api.search.scrip": "/rest/secure/angelbroking/order/v1/searchScrip"
+        "api.search.scrip": "/rest/secure/angelbroking/order/v1/searchScrip",
+        "api.allholding": "/rest/secure/angelbroking/portfolio/v1/getAllHolding"
     }
 
 
@@ -331,6 +332,10 @@ class SmartConnect(object):
     def holding(self):
         holdingResponse= self._getRequest("api.holding")
         return holdingResponse
+    
+    def allholding(self):
+        allholdingResponse= self._getRequest("api.allholding")
+        return allholdingResponse
     
     def convertPosition(self,positionParams):
         params=positionParams
