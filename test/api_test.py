@@ -158,6 +158,10 @@ candleParams={
 candledetails=smartApi.getCandleData(candleParams)
 print("Historical Data",candledetails)
 
+qParam ="your uniqueorderid"
+data = smartApi.ind_order_details(qParam)
+print(data)
+
 terminate=smartApi.terminateSession('Your client code')
 print("Connection Close",terminate)
 

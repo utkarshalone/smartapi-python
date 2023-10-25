@@ -47,7 +47,9 @@ class SmartConnect(object):
         "api.candle.data":"/rest/secure/angelbroking/historical/v1/getCandleData",
         "api.market.data":"/rest/secure/angelbroking/market/v1/quote",
         "api.search.scrip": "/rest/secure/angelbroking/order/v1/searchScrip",
-        "api.allholding": "/rest/secure/angelbroking/portfolio/v1/getAllHolding"
+        "api.allholding": "/rest/secure/angelbroking/portfolio/v1/getAllHolding",
+
+        "api.individual.order.details": "/rest/secure/angelbroking/order/v1/details/"
     }
 
 
@@ -432,6 +434,27 @@ class SmartConnect(object):
             return searchScripResult
         else:
             return searchScripResult
+        
+    def ind_order_details(self, qParam):
+        url = self._rootUrl + self._routes["api.individual.order.details"] + qParam
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "X-UserType": "USER",
+            "X-SourceID": "WEB",
+            "X-PrivateKey": self.api_key,
+        }
+
+        if self.access_token:
+            headers["Authorization"] = "Bearer " + self.access_token
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            data = json.loads(response.text)
+            return data
+        else:
+            print("Error:", response.status_code)
+            return None
         
     def _user_agent(self):
         return (__title__ + "-python/").capitalize() + __version__   
