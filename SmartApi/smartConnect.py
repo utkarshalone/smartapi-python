@@ -49,7 +49,8 @@ class SmartConnect(object):
         "api.search.scrip": "/rest/secure/angelbroking/order/v1/searchScrip",
         "api.allholding": "/rest/secure/angelbroking/portfolio/v1/getAllHolding",
 
-        "api.individual.order.details": "/rest/secure/angelbroking/order/v1/details/"
+        "api.individual.order.details": "/rest/secure/angelbroking/order/v1/details/",
+        "api.margin.api" : 'rest/secure/angelbroking/margin/v1/batch'
     }
 
 
@@ -455,7 +456,11 @@ class SmartConnect(object):
         else:
             print("Error:", response.status_code)
             return None
-        
+    
+    def getMarginApi(self,params):
+        marginApiResult=self._postRequest("api.margin.api",params)
+        return marginApiResult
+ 
     def _user_agent(self):
         return (__title__ + "-python/").capitalize() + __version__   
 

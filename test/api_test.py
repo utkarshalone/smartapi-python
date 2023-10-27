@@ -162,6 +162,19 @@ qParam ="your uniqueorderid"
 data = smartApi.ind_order_details(qParam)
 print(data)
 
+params = {
+    "positions": [{
+        "exchange": "NFO",
+        "qty": 1500,
+        "price": 0,
+        "productType": "CARRYFORWARD",
+        "token": "154388",
+        "tradeType": "SELL"
+    }]
+}
+margin_api_result=smartApi.getmarginApi(params)
+print(margin_api_result)
+
 terminate=smartApi.terminateSession('Your client code')
 print("Connection Close",terminate)
 
