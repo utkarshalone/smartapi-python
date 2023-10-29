@@ -435,25 +435,25 @@ class SmartConnect(object):
         else:
             return searchScripResult
         
-    def ind_order_details(self, qParam):
-        url = self._rootUrl + self._routes["api.individual.order.details"] + qParam
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "X-UserType": "USER",
-            "X-SourceID": "WEB",
-            "X-PrivateKey": self.api_key,
-        }
-
-        if self.access_token:
-            headers["Authorization"] = "Bearer " + self.access_token
-        response = requests.get(url, headers=headers)
-
+    def make_authenticated_get_request(self, url, access_token):
+        headers = self.requestHeaders()
+        if access_token:
+            headers["Authorization"] = "Bearer " + access_token
+        response = requests.get(url, headers=headers)       
+        print(response.status_code)     
         if response.status_code == 200:
             data = json.loads(response.text)
             return data
         else:
-            print("Error:", response.status_code)
+            raise Exception(f"Error: {response.status_code}, {response.text}")
+    
+    def ind_order_details(self, qParam):
+        url = self._rootUrl + self._routes["api.individual.order.details"] + qParam
+        try:
+            response_data = self.make_authenticated_get_request(url, self.access_token)
+            return response_data
+        except Exception as e:
+            print(str(e))
             return None
         
     def _user_agent(self):
