@@ -441,7 +441,6 @@ class SmartConnect(object):
         if access_token:
             headers["Authorization"] = "Bearer " + access_token
         response = requests.get(url, headers=headers)       
-        print(response.status_code)     
         if response.status_code == 200:
             data = json.loads(response.text)
             return data
