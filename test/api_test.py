@@ -212,9 +212,14 @@ def on_data(wsapp, message):
 
 def on_open(wsapp):
     logger.info("on open")
-    sws.subscribe(correlation_id, mode, token_list)
-    # sws.unsubscribe(correlation_id, mode, token_list1)
-
+    some_error_condition = False
+    if some_error_condition:
+        error_message = "Simulated error"
+        if hasattr(wsapp, 'on_error'):
+            wsapp.on_error("Custom Error Type", error_message)
+    else:
+        sws.subscribe(correlation_id, mode, token_list)
+        # sws.unsubscribe(correlation_id, mode, token_list1)
 
 def on_error(wsapp, error):
     logger.error(error)
