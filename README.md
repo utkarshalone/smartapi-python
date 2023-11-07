@@ -9,8 +9,6 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install smartap
 
 ```bash
 pip install -r requirements_dev.txt       # for downloading the other required packages
-pip install smartapi-python
-pip install websocket-client
 ```
 
 ## Usage
@@ -116,43 +114,6 @@ except Exception as e:
 ## Getting started with SmartAPI Websocket's
 
 ```python
-
-from SmartApi import SmartWebSocket
-
-# feed_token=092017047
-FEED_TOKEN="YOUR_FEED_TOKEN"
-CLIENT_CODE="YOUR_CLIENT_CODE"
-# token="mcx_fo|224395"
-token="EXCHANGE|TOKEN_SYMBOL"    #SAMPLE: nse_cm|2885&nse_cm|1594&nse_cm|11536&nse_cm|3045
-# token="mcx_fo|226745&mcx_fo|220822&mcx_fo|227182&mcx_fo|221599"
-task="mw"   # mw|sfi|dp
-
-ss = SmartWebSocket(FEED_TOKEN, CLIENT_CODE)
-
-def on_message(ws, message):
-    print("Ticks: {}".format(message))
-    
-def on_open(ws):
-    print("on open")
-    ss.subscribe(task,token)
-    
-def on_error(ws, error):
-    print(error)
-    
-def on_close(ws):
-    print("Close")
-
-# Assign the callbacks.
-ss._on_open = on_open
-ss._on_message = on_message
-ss._on_error = on_error
-ss._on_close = on_close
-
-ss.connect()
-
-
-####### Websocket sample code ended here #######
-
 ####### Websocket V2 sample code #######
 
 from SmartApi.smartWebSocketV2 import SmartWebSocketV2
@@ -171,7 +132,11 @@ token_list = [
         "tokens": ["26009"]
     }
 ]
-sws = SmartWebSocketV2(AUTH_TOKEN, API_KEY, CLIENT_CODE, FEED_TOKEN)
+# simple retry mechanism
+sws = SmartWebSocketV2(AUTH_TOKEN, API_KEY, CLIENT_CODE, FEED_TOKEN,max_retry_attempt=2, retry_strategy="simple", retry_delay=10, retry_duration=30)
+
+# exponential retry mechanism
+# sws = SmartWebSocketV2(AUTH_TOKEN, API_KEY, CLIENT_CODE, FEED_TOKEN,max_retry_attempt=3, retry_strategy="exponential", retry_delay=10,retry_multiplier=2, retry_duration=30)
 
 def on_data(wsapp, message):
     logger.info("Ticks: {}".format(message))
@@ -179,7 +144,14 @@ def on_data(wsapp, message):
 
 def on_open(wsapp):
     logger.info("on open")
-    sws.subscribe(correlation_id, mode, token_list)
+    some_error_condition = False
+    if some_error_condition:
+        error_message = "Simulated error"
+        if hasattr(wsapp, 'on_error'):
+            wsapp.on_error("Custom Error Type", error_message)
+    else:
+        sws.subscribe(correlation_id, mode, token_list)
+        # sws.unsubscribe(correlation_id, mode, token_list1)
 
 def on_error(wsapp, error):
     logger.error(error)
