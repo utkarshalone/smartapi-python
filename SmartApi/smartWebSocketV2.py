@@ -105,7 +105,6 @@ class SmartWebSocketV2(object):
     def _on_open(self, wsapp):
         if self.RESUBSCRIBE_FLAG:
             self.resubscribe()
-            self.RESUBSCRIBE_FLAG = False  # Add this line to prevent resubscription on subsequent reconnects
         else:
             self.on_open(wsapp)
 
@@ -322,12 +321,10 @@ class SmartWebSocketV2(object):
         """
         Closes the connection
         """
-        self.RESUBSCRIBE_FLAG = False
         self.DISCONNECT_FLAG = True
-        # self.HB_THREAD_FLAG = False
         if self.wsapp:
             self.wsapp.close()
-
+        
     # def run(self):
     #     while True:
     #         if not self.HB_THREAD_FLAG:
@@ -370,8 +367,6 @@ class SmartWebSocketV2(object):
                 print("Connection closed due to max retry attempts reached.")
 
     def _on_close(self, wsapp):
-        # self.HB_THREAD_FLAG = False
-        # print(self.wsapp.close_frame)
         self.on_close(wsapp)
 
     def _parse_binary_data(self, binary_data):
