@@ -440,13 +440,13 @@ class SmartConnect(object):
         headers = self.requestHeaders()
         if access_token:
             headers["Authorization"] = "Bearer " + access_token
-        response = requests.get(url, headers=headers)       
-        print(response.status_code)     
+        response = requests.get(url, headers=headers)
         if response.status_code == 200:
             data = json.loads(response.text)
             return data
         else:
             raise Exception(f"Error: {response.status_code}, {response.text}")
+
     
     def ind_order_details(self, qParam):
         url = self._rootUrl + self._routes["api.individual.order.details"] + qParam
