@@ -447,7 +447,7 @@ class SmartConnect(object):
         else:
             raise Exception(f"Error: {response.status_code}, {response.text}")
     
-    def ind_order_details(self, qParam):
+    def individual_order_details(self, qParam):
         url = self._rootUrl + self._routes["api.individual.order.details"] + qParam
         try:
             response_data = self.make_authenticated_get_request(url, self.access_token)
