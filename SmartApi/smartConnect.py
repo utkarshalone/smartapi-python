@@ -445,15 +445,7 @@ class SmartConnect(object):
             data = json.loads(response.text)
             return data
         else:
-            raise Exception(f"Error: {response.status_code}, {response.text}")
-        
-    def ind_order_details(self, qParam):
-        url = self._rootUrl + self._routes["api.individual.order.details"] + qParam
-        try:
-            response_data = self.make_authenticated_get_request(url, self.access_token)
-            return response_data
-        except Exception as e:
-            print(str(e))
+            print("Error:", response.status_code)
             return None
     
     def getMarginApi(self,params):
