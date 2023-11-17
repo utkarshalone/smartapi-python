@@ -348,8 +348,12 @@ class SmartWebSocketV2(object):
                 self.connect()
             except Exception as e:
                 print("Error occurred during resubscribe/reconnect:", str(e))
+                if hasattr(self, 'on_error'):
+                    self.on_error("Reconnect Error", str(e) if str(e) else "Unknown error")
         else:
             self.close_connection()
+            if hasattr(self, 'on_error'):
+                self.on_error("Max retry attempt reached", "Connection closed")
 
     def _on_close(self, wsapp):
         # self.HB_THREAD_FLAG = False
