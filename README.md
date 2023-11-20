@@ -133,10 +133,10 @@ token_list = [
     }
 ]
 # simple retry mechanism
-sws = SmartWebSocketV2(AUTH_TOKEN, API_KEY, CLIENT_CODE, FEED_TOKEN,max_retry_attempt=2, retry_strategy="simple", retry_delay=10, retry_duration=30)
+sws = SmartWebSocketV2(AUTH_TOKEN, API_KEY, CLIENT_CODE, FEED_TOKEN,max_retry_attempt=2, retry_strategy=0, retry_delay=10, retry_duration=30)
 
-# exponential retry mechanism
-# sws = SmartWebSocketV2(AUTH_TOKEN, API_KEY, CLIENT_CODE, FEED_TOKEN,max_retry_attempt=3, retry_strategy="exponential", retry_delay=10,retry_multiplier=2, retry_duration=30)
+# exponential retry mechanism 
+# sws = SmartWebSocketV2(AUTH_TOKEN, API_KEY, CLIENT_CODE, FEED_TOKEN,max_retry_attempt=3, retry_strategy=1, retry_delay=10,retry_multiplier=2, retry_duration=30)
 
 def on_data(wsapp, message):
     logger.info("Ticks: {}".format(message))
