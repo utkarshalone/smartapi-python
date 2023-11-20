@@ -170,5 +170,11 @@ sws.on_error = on_error
 sws.on_close = on_close
 
 sws.connect()
+####### Websocket V2 sample code ENDS Here #######
 
+########################### SmartWebSocket OrderUpdate Sample Code Start Here ###########################
+from SmartApi.smartWebSocketOrderUpdate import SmartWebSocketOrderUpdate
+client = SmartWebSocketOrderUpdate(AUTH_TOKEN, API_KEY, CLIENT_CODE, FEED_TOKEN)
+client.connect()
+########################### SmartWebSocket OrderUpdate Sample Code End Here ###########################
 ```
