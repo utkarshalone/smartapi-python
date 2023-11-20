@@ -51,7 +51,7 @@ class SmartWebSocketV2(object):
     input_request_dict = {}
     current_retry_attempt = 0
 
-    def __init__(self, auth_token, api_key, client_code, feed_token, max_retry_attempt=1,retry_strategy="simple", retry_delay=10, retry_multiplier=2, retry_duration=60):
+    def __init__(self, auth_token, api_key, client_code, feed_token, max_retry_attempt=1,retry_strategy=0, retry_delay=10, retry_multiplier=2, retry_duration=60):
         """
             Initialise the SmartWebSocketV2 instance
             Parameters
@@ -343,9 +343,9 @@ class SmartWebSocketV2(object):
         if self.current_retry_attempt < self.MAX_RETRY_ATTEMPT:
             print(f"Attempting to resubscribe/reconnect (Attempt {self.current_retry_attempt + 1})...")
             self.current_retry_attempt += 1
-            if self.retry_strategy == "simple":
+            if self.retry_strategy == 0: #retry_strategy for simple
                 time.sleep(self.retry_delay)
-            elif self.retry_strategy == "exponential":
+            elif self.retry_strategy == 1: #retry_strategy for exponential
                 delay = self.retry_delay * (self.retry_multiplier ** (self.current_retry_attempt - 1))
                 time.sleep(delay)
             else:
