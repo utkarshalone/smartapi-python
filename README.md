@@ -17,6 +17,7 @@ pip install -r requirements_dev.txt       # for downloading the other required p
 # package import statement
 from SmartApi import SmartConnect #or from SmartApi.smartConnect import SmartConnect
 import pyotp
+from logzero import logger
 
 api_key = 'Your Api Key'
 clientId = 'Your Client Id'
@@ -29,7 +30,7 @@ correlation_id = "abc123"
 # login api call
 
 data = smartApi.generateSession(clientId, pwd, totp)
-# print(data)
+# logger.info(f"data: {data}")
 authToken = data['data']['jwtToken']
 refreshToken = data['data']['refreshToken']
 
@@ -58,9 +59,10 @@ try:
         "quantity": "1"
         }
     orderId=smartApi.placeOrder(orderparams)
-    print("The order id is: {}".format(orderId))
+    logger.info(f"PlaceOrder : {orderId}")
 except Exception as e:
-    print("Order placement failed: {}".format(e.message))
+    logger.exception(f"Order placement failed: {e}")
+
 #gtt rule creation
 try:
     gttCreateParams={
@@ -76,9 +78,9 @@ try:
             "timeperiod" : 365
         }
     rule_id=smartApi.gttCreateRule(gttCreateParams)
-    print("The GTT rule id is: {}".format(rule_id))
+    logger.info(f"The GTT rule id is: {rule_id}")
 except Exception as e:
-    print("GTT Rule creation failed: {}".format(e.message))
+    logger.exception(f"GTT Rule creation failed: {e}")
     
 #gtt rule list
 try:
@@ -87,7 +89,7 @@ try:
     count=10
     lists=smartApi.gttLists(status,page,count)
 except Exception as e:
-    print("GTT Rule List failed: {}".format(e.message))
+    logger.exception(f"GTT Rule List failed: {e}")
 
 #Historic api
 try:
@@ -100,16 +102,15 @@ try:
     }
     smartApi.getCandleData(historicParam)
 except Exception as e:
-    print("Historic Api failed: {}".format(e.message))
+    logger.exception(f"Historic Api failed: {e}")
 #logout
 try:
     logout=smartApi.terminateSession('Your Client Id')
-    print("Logout Successfull")
+    logger.info("Logout Successfull")
 except Exception as e:
-    print("Logout failed: {}".format(e.message))
+    logger.exception(f"Logout failed: {e}")
 
 ```
-
 
 ## Getting started with SmartAPI Websocket's
 
