@@ -329,13 +329,6 @@ class SmartWebSocketV2(object):
         if self.wsapp:
             self.wsapp.close()
         
-    # def run(self):
-    #     while True:
-    #         if not self.HB_THREAD_FLAG:
-    #             break
-    #         self.send_heart_beat()
-    #         time.sleep(self.HEAR_BEAT_INTERVAL)
-
     def send_heart_beat(self):
         try:
             self.wsapp.send(self.HEART_BEAT_MESSAGE)
