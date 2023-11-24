@@ -138,21 +138,6 @@ class SmartWebSocketV2(object):
             self.close_connection()
             self.connect()
 
-    def start_ping_timer(self):
-        def send_ping():
-            try:
-                current_time = datetime.now()
-                if self.last_pong_timestamp is None or self.last_pong_timestamp < current_time - timedelta(self.HEART_BEAT_MESSAGE):
-                    self.connect()
-                else:
-                    self.last_ping_timestamp = time.time()
-            except Exception as e:
-                self.wsapp.close()
-                self.resubscribe()
-
-        ping_timer = Timer(5, send_ping)
-        ping_timer.start()
-
     def subscribe(self, correlation_id, mode, token_list):
         """
             This Function subscribe the price data for the given token
@@ -316,7 +301,6 @@ class SmartWebSocketV2(object):
                                                 on_pong=self._on_pong)
             self.wsapp.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE}, ping_interval=self.HEART_BEAT_INTERVAL,
                                    ping_payload=self.HEART_BEAT_MESSAGE)
-            # self.start_ping_timer()
         except Exception as e:
             logger.exception(f"Error occurred during WebSocket connection: {e}")
             raise e
