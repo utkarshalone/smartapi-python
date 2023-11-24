@@ -3,8 +3,6 @@ import time
 import ssl
 import json
 import websocket
-from datetime import datetime, timedelta
-from threading import Timer
 import os
 import logging
 import logzero
@@ -130,13 +128,6 @@ class SmartWebSocketV2(object):
         formatted_timestamp = time.strftime("%d-%m-%y %H:%M:%S", time.localtime(timestamp))
         logger.info(f"In on ping function ==> {data}, Timestamp: {formatted_timestamp}")
         self.last_ping_timestamp = timestamp
-
-    def check_connection_status(self):
-        current_time = time.time()
-        if self.last_pong_timestamp is not None and current_time - self.last_pong_timestamp > 2*self.HEART_BEAT_MESSAGE:
-            # Stale connection detected, take appropriate action
-            self.close_connection()
-            self.connect()
 
     def subscribe(self, correlation_id, mode, token_list):
         """
@@ -312,14 +303,7 @@ class SmartWebSocketV2(object):
         self.DISCONNECT_FLAG = True
         if self.wsapp:
             self.wsapp.close()
-        
-    def send_heart_beat(self):
-        try:
-            self.wsapp.send(self.HEART_BEAT_MESSAGE)
-        except Exception as e:
-            logger.exception(f"Error occurred during sending heartbeat: {e}")
-            raise e
-        
+                
     def _on_error(self, wsapp, error):
         self.RESUBSCRIBE_FLAG = True
         if self.current_retry_attempt < self.MAX_RETRY_ATTEMPT:
