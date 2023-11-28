@@ -119,9 +119,6 @@ class SmartWebSocketV2(object):
             formatted_timestamp = time.strftime("%d-%m-%y %H:%M:%S", time.localtime(timestamp))
             logger.info(f"In on pong function ==> {data}, Timestamp: {formatted_timestamp}")
             self.last_pong_timestamp = timestamp
-        else:
-            # Handle the received feed data here
-            self.on_data(wsapp, data)
 
     def _on_ping(self, wsapp, data):
         timestamp = time.time()
