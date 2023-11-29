@@ -6,11 +6,14 @@ import requests
 from requests import get
 import re, uuid
 import socket
+import os
+import logzero
+from logzero import logger
+import time
+
 from SmartApi.version import __version__, __title__
 
 log = logging.getLogger(__name__)
-#user_sys=platform.system()
-#print("the system",user_sys)
 
 class SmartConnect(object):
     #_rootUrl = "https://openapisuat.angelbroking.com"
@@ -53,7 +56,6 @@ class SmartConnect(object):
         "api.margin.api" : 'rest/secure/angelbroking/margin/v1/batch'
     }
 
-
     try:
         clientPublicIp= " " + get('https://api.ipify.org').text
         if " " in clientPublicIp:
@@ -61,7 +63,7 @@ class SmartConnect(object):
         hostname = socket.gethostname()
         clientLocalIp=socket.gethostbyname(hostname)
     except Exception as e:
-        print("Exception while retriving IP Address,using local host IP address",e)
+        logger.exception(f"Exception while retriving IP Address,using local host IP address: {e}")
     finally:
         clientPublicIp="106.193.147.98"
         clientLocalIp="127.0.0.1"
@@ -69,7 +71,6 @@ class SmartConnect(object):
     accept = "application/json"
     userType = "USER"
     sourceID = "WEB"
-    
 
     def __init__(self, api_key=None, access_token=None, refresh_token=None,feed_token=None, userId=None, root=None, debug=False, timeout=None, proxies=None, pool=None, disable_ssl=False,accept=None,userType=None,sourceID=None,Authorization=None,clientPublicIP=None,clientMacAddress=None,clientLocalIP=None,privateKey=None):
         self.debug = debug
@@ -91,12 +92,18 @@ class SmartConnect(object):
         self.accept=self.accept
         self.userType=self.userType
         self.sourceID=self.sourceID
+        # Create a log folder based on the current date
+        log_folder = time.strftime("%Y-%m-%d", time.localtime())
+        log_folder_path = os.path.join("logs", log_folder)  # Construct the full path to the log folder
+        os.makedirs(log_folder_path, exist_ok=True) # Create the log folder if it doesn't exist
+        log_path = os.path.join(log_folder_path, "app.log") # Construct the full path to the log file
+        logzero.logfile(log_path, loglevel=logging.INFO)  # Output logs to a date-wise log file
 
         if pool:
             self.reqsession = requests.Session()
             reqadapter = requests.adapters.HTTPAdapter(**pool)
             self.reqsession.mount("https://", reqadapter)
-            print("in pool")
+            logger.info(f"in pool")
         else:
             self.reqsession = requests
 
@@ -356,7 +363,6 @@ class SmartConnect(object):
                 del(params[k])
 
         createGttRuleResponse=self._postRequest("api.gtt.create",params)
-        #print(createGttRuleResponse)       
         return createGttRuleResponse['data']['id']
 
     def gttModifyRule(self,modifyRuleParams):
@@ -365,7 +371,6 @@ class SmartConnect(object):
             if params[k] is None:
                 del(params[k])
         modifyGttRuleResponse=self._postRequest("api.gtt.modify",params)
-        #print(modifyGttRuleResponse)
         return modifyGttRuleResponse['data']['id']
      
     def gttCancelRule(self,gttCancelParams):
@@ -373,10 +378,7 @@ class SmartConnect(object):
         for k in list(params.keys()):
             if params[k] is None:
                 del(params[k])
-        
-        #print(params)
         cancelGttRuleResponse=self._postRequest("api.gtt.cancel",params)
-        #print(cancelGttRuleResponse)
         return cancelGttRuleResponse
      
     def gttDetails(self,id):
@@ -394,7 +396,6 @@ class SmartConnect(object):
                 "count":count
             }
             gttListResponse=self._postRequest("api.gtt.list",params)
-            #print(gttListResponse)
             return gttListResponse
         else:
             message="The status param is entered as" +str(type(status))+". Please enter status param as a list i.e., status=['CANCELLED']"
@@ -428,10 +429,10 @@ class SmartConnect(object):
             for index, item in enumerate(searchScripResult["data"], start=1):
                 symbol_info = f"{index}. exchange: {item['exchange']}, tradingsymbol: {item['tradingsymbol']}, symboltoken: {item['symboltoken']}"
                 symbols += "\n" + symbol_info
-            print(message + symbols)
+            logger.info(message + symbols)
             return searchScripResult
         elif searchScripResult["status"] is True and not searchScripResult["data"]:
-            print("Search successful. No matching trading symbols found for the given query.")
+            logger.info("Search successful. No matching trading symbols found for the given query.")
             return searchScripResult
         else:
             return searchScripResult
@@ -445,7 +446,7 @@ class SmartConnect(object):
             data = json.loads(response.text)
             return data
         else:
-            print("Error:", response.status_code)
+            logger.error(f"Error in make_authenticated_get_request: {response.status_code}")
             return None
             
     def individual_order_details(self, qParam):
@@ -454,7 +455,7 @@ class SmartConnect(object):
             response_data = self.make_authenticated_get_request(url, self.access_token)
             return response_data
         except Exception as e:
-            print(str(e))
+            logger.exception(f"Error occurred in ind_order_details: {e}")
             return None
     
     def getMarginApi(self,params):

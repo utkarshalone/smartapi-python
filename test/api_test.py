@@ -10,16 +10,15 @@ token = "Your QR value"
 totp=pyotp.TOTP(token).now()
 correlation_id = "abcde"
 data = smartApi.generateSession(username, pwd, totp)
-# print(data)
+# logger.info(f"data: {data}")
 authToken = data['data']['jwtToken']
 refreshToken = data['data']['refreshToken']
 feedToken = smartApi.getfeedToken()
-# print("Feed-Token :", feedToken)
+# logger.info(f"Feed-Token :{feedToken}")
 res = smartApi.getProfile(refreshToken)
-# print("Res:", res)
+# logger.info(f"Get Profile: {res}")
 smartApi.generateToken(refreshToken)
 res=res['data']['exchanges']
-
 
 orderparams = {
     "variety": "NORMAL",
@@ -36,7 +35,7 @@ orderparams = {
     "quantity": "1"
 }
 orderid = smartApi.placeOrder(orderparams)
-print("PlaceOrder", orderid)
+logger.info(f"PlaceOrder : {orderid}")
 
 modifyparams = {
     "variety": "NORMAL",
@@ -51,33 +50,33 @@ modifyparams = {
     "exchange": "NSE"
 }
 smartApi.modifyOrder(modifyparams)
-print("Modify Orders:",modifyparams)
+logger.info(f"Modify Orders : {modifyparams}")
 
 smartApi.cancelOrder(orderid, "NORMAL")
 
 orderbook=smartApi.orderBook()
-print("Order Book :", orderbook)
+logger.info(f"Order Book: {orderbook}")
 
 tradebook=smartApi.tradeBook()
-print("Trade Book :",tradebook)
+logger.info(f"Trade Book : {tradebook}")
 
 rmslimit=smartApi.rmsLimit()
-print("RMS Limit :", rmslimit)
+logger.info(f"RMS Limit : {rmslimit}")
 
 pos=smartApi.position()
-print("Position :", pos)
+logger.info(f"Position : {pos}")
 
 holdings=smartApi.holding()
-print("Holdings :", holdings)
+logger.info(f"Holdings : {holdings}")
 
 allholdings=smartApi.allholding()
-print("AllHoldings :", allholdings)
+logger.info(f"AllHoldings : {allholdings}")
 
 exchange = "NSE"
 tradingsymbol = "SBIN-EQ"
 symboltoken = 3045
 ltp=smartApi.ltpData("NSE", "SBIN-EQ", "3045")
-print("Ltp Data :", ltp)
+logger.info(f"Ltp Data : {ltp}")
 
 mode="FULL"
 exchangeTokens= {
@@ -86,12 +85,12 @@ exchangeTokens= {
  ]
  }
 marketData=smartApi.getMarketData(mode, exchangeTokens)
-print("Market Data :", marketData)
+logger.info(f"Market Data : {marketData}")
 
 exchange = "BSE"
 searchscrip = "Titan"
 searchScripData = smartApi.searchScrip(exchange, searchscrip)
-print("Search Scrip Data :",searchScripData)
+logger.info(f"Search Scrip Data : {searchScripData}")
 
 params = {
     "exchange": "NSE",
@@ -119,7 +118,7 @@ gttCreateParams = {
     "timeperiod": 365
 }
 rule_id = smartApi.gttCreateRule(gttCreateParams)
-print("Gtt Rule :", rule_id)
+logger.info(f"Gtt Rule: {rule_id}")
 
 gttModifyParams = {
     "id": rule_id,
@@ -132,7 +131,7 @@ gttModifyParams = {
     "timeperiod": 365
 }
 modified_id = smartApi.gttModifyRule(gttModifyParams)
-print("Gtt Modified Rule :", modified_id)
+logger.info(f"Gtt Modified Rule: {modified_id}")
 
 cancelParams = {
     "id": rule_id,
@@ -141,10 +140,10 @@ cancelParams = {
 }
 
 cancelled_id = smartApi.gttCancelRule(cancelParams)
-print("gtt Cancel Rule :", cancelled_id)
+logger.info(f"gtt Cancel Rule: {cancelled_id}")
 
 gttdetails=smartApi.gttDetails(rule_id)
-print("GTT Details",gttdetails)
+logger.info(f"GTT Details: {gttdetails}")
 
 smartApi.gttLists('List of status', '<page>', '<count>')
 
@@ -156,11 +155,11 @@ candleParams={
      "todate": "2021-02-10 09:16"
 }
 candledetails=smartApi.getCandleData(candleParams)
-print("Historical Data",candledetails)
+logger.info(f"Historical Data: {candledetails}")
 
 qParam ="your uniqueorderid"
 data = smartApi.individual_order_details(qParam)
-print(data)
+logger.info(f"Individual_order_details: {data}")
 
 params = {
     "positions": [{
@@ -173,10 +172,10 @@ params = {
     }]
 }
 margin_api_result=smartApi.getmarginApi(params)
-print(margin_api_result)
+logger.info(f"margin_api_result: {margin_api_result}")
 
 terminate=smartApi.terminateSession('Your client code')
-print("Connection Close",terminate)
+logger.info(f"Connection Close: {terminate}")
 
 # # Websocket Programming
 
@@ -204,7 +203,11 @@ token_list1 = [
     }
 ]
 
-sws = SmartWebSocketV2(AUTH_TOKEN, API_KEY, CLIENT_CODE, FEED_TOKEN)
+# simple retry mechanism
+sws = SmartWebSocketV2(AUTH_TOKEN, API_KEY, CLIENT_CODE, FEED_TOKEN,max_retry_attempt=2, retry_strategy=0, retry_delay=10, retry_duration=30)
+
+# exponential retry mechanism 
+# sws = SmartWebSocketV2(AUTH_TOKEN, API_KEY, CLIENT_CODE, FEED_TOKEN,max_retry_attempt=3, retry_strategy=1, retry_delay=10,retry_multiplier=2, retry_duration=30)
 
 def on_data(wsapp, message):
     logger.info("Ticks: {}".format(message))
@@ -238,3 +241,10 @@ sws.on_error = on_error
 sws.on_close = on_close
 
 sws.connect()
+
+
+########################### SmartWebSocket OrderUpdate Sample Code Start Here ###########################
+from SmartApi.smartWebSocketOrderUpdate import SmartWebSocketOrderUpdate
+client = SmartWebSocketOrderUpdate(AUTH_TOKEN, API_KEY, CLIENT_CODE, FEED_TOKEN)
+client.connect()
+########################### SmartWebSocket OrderUpdate Sample Code End Here ###########################

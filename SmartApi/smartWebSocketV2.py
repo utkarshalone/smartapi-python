@@ -1,12 +1,12 @@
 import struct
-import threading
 import time
 import ssl
 import json
 import websocket
-from datetime import datetime, timedelta
-from threading import Timer
-
+import os
+import logging
+import logzero
+from logzero import logger
 
 class SmartWebSocketV2(object):
     """
@@ -51,7 +51,7 @@ class SmartWebSocketV2(object):
     input_request_dict = {}
     current_retry_attempt = 0
 
-    def __init__(self, auth_token, api_key, client_code, feed_token, max_retry_attempt=1):
+    def __init__(self, auth_token, api_key, client_code, feed_token, max_retry_attempt=1,retry_strategy=0, retry_delay=10, retry_multiplier=2, retry_duration=60):
         """
             Initialise the SmartWebSocketV2 instance
             Parameters
@@ -72,18 +72,28 @@ class SmartWebSocketV2(object):
         self.DISCONNECT_FLAG = True
         self.last_pong_timestamp = None
         self.MAX_RETRY_ATTEMPT = max_retry_attempt
-
+        self.retry_strategy = retry_strategy
+        self.retry_delay = retry_delay
+        self.retry_multiplier = retry_multiplier
+        self.retry_duration = retry_duration        
+        # Create a log folder based on the current date
+        log_folder = time.strftime("%Y-%m-%d", time.localtime())
+        log_folder_path = os.path.join("logs", log_folder)  # Construct the full path to the log folder
+        os.makedirs(log_folder_path, exist_ok=True) # Create the log folder if it doesn't exist
+        log_path = os.path.join(log_folder_path, "app.log") # Construct the full path to the log file
+        logzero.logfile(log_path, loglevel=logging.INFO)  # Output logs to a date-wise log file
+        
         if not self._sanity_check():
+            logger.error("Invalid initialization parameters. Provide valid values for all the tokens.")
             raise Exception("Provide valid value for all the tokens")
 
     def _sanity_check(self):
+        if not all([self.auth_token, self.api_key, self.client_code, self.feed_token]):
+            return False
         return True
-        # if self.auth_token is None or self.api_key is None or self.client_code is None or self.feed_token is None:
-        #     return False
-        # return True
 
     def _on_message(self, wsapp, message):
-        print("message--->", message)
+        logger.info(f"Received message: {message}")
         if message != "pong":
             parsed_message = self._parse_binary_data(message)
             self.on_message(wsapp, parsed_message)
@@ -91,7 +101,6 @@ class SmartWebSocketV2(object):
             self.on_message(wsapp, message)
 
     def _on_data(self, wsapp, data, data_type, continue_flag):
-
         if data_type == 2:
             parsed_message = self._parse_binary_data(data)
             self.on_data(wsapp, parsed_message)
@@ -101,7 +110,6 @@ class SmartWebSocketV2(object):
     def _on_open(self, wsapp):
         if self.RESUBSCRIBE_FLAG:
             self.resubscribe()
-            self.RESUBSCRIBE_FLAG = False  # Add this line to prevent resubscription on subsequent reconnects
         else:
             self.on_open(wsapp)
 
@@ -109,7 +117,7 @@ class SmartWebSocketV2(object):
         if data == self.HEART_BEAT_MESSAGE:
             timestamp = time.time()
             formatted_timestamp = time.strftime("%d-%m-%y %H:%M:%S", time.localtime(timestamp))
-            print(f"In on pong function ==> {data}, Timestamp: {formatted_timestamp}")
+            logger.info(f"In on pong function ==> {data}, Timestamp: {formatted_timestamp}")
             self.last_pong_timestamp = timestamp
         else:
             # Handle the received feed data here
@@ -118,32 +126,8 @@ class SmartWebSocketV2(object):
     def _on_ping(self, wsapp, data):
         timestamp = time.time()
         formatted_timestamp = time.strftime("%d-%m-%y %H:%M:%S", time.localtime(timestamp))
-        print(f"In on ping function ==> {data}, Timestamp: {formatted_timestamp}")
+        logger.info(f"In on ping function ==> {data}, Timestamp: {formatted_timestamp}")
         self.last_ping_timestamp = timestamp
-
-    def check_connection_status(self):
-        current_time = time.time()
-        if self.last_pong_timestamp is not None and current_time - self.last_pong_timestamp > 2*self.HEART_BEAT_MESSAGE:
-            # Stale connection detected, take appropriate action
-            self.close_connection()
-            self.connect()
-
-    def start_ping_timer(self):
-        def send_ping():
-            try:
-                current_time = datetime.now()
-                if self.last_pong_timestamp is None or self.last_pong_timestamp < current_time - timedelta(self.HEART_BEAT_MESSAGE):
-                    # print("stale connection detected")
-                    # self.wsapp.close()
-                    self.connect()
-                else:
-                    self.last_ping_timestamp = time.time()
-            except Exception as e:
-                self.wsapp.close()
-                self.resubscribe()
-
-        ping_timer = Timer(5, send_ping)
-        ping_timer.start()
 
     def subscribe(self, correlation_id, mode, token_list):
         """
@@ -186,27 +170,38 @@ class SmartWebSocketV2(object):
                     "tokenList": token_list
                 }
             }
-
+            if mode == 4:
+                for token in token_list:
+                    if token.get('exchangeType') != 1:
+                        error_message = "Invalid ExchangeType: Please check the exchange type and try again"
+                        logger.error(error_message)
+                        raise ValueError(error_message)
             if self.input_request_dict.get(mode) is None:
                 self.input_request_dict[mode] = {}
-
             for token in token_list:
                 if token['exchangeType'] in self.input_request_dict[mode]:
                     self.input_request_dict[mode][token['exchangeType']].extend(token["tokens"])
                 else:
                     self.input_request_dict[mode][token['exchangeType']] = token["tokens"]
-
             if mode == self.DEPTH:
                 total_tokens = sum(len(token["tokens"]) for token in token_list)
                 quota_limit = 50
                 if total_tokens > quota_limit:
-                    raise Exception("Quota exceeded: You can subscribe to a maximum of {} tokens.".format(quota_limit))
-
-            self.wsapp.send(json.dumps(request_data))
-            self.RESUBSCRIBE_FLAG = True
-
+                    error_message = f"Quota exceeded: You can subscribe to a maximum of {quota_limit} tokens."
+                    logger.error(error_message)
+                    raise Exception(error_message)
+                else:
+                    self.wsapp.send(json.dumps(request_data))
+                    self.RESUBSCRIBE_FLAG = True
         except Exception as e:
-            print("Error:", e)
+            error_message = str(e)
+            if "Quota exceeded" in error_message:
+                logger.error(f"Quota exceeded error: {error_message}")
+                os._exit(1)  # Exit the script when the quota is exceeded
+            elif "Invalid ExchangeType" in error_message:
+                logger.error(f"Invalid ExchangeType: {error_message}")
+                os._exit(1)  # Exit the script when the Invalid ExchangeType
+            logger.exception(f"Error occurred during subscribe: {e}")
             raise e
 
     def unsubscribe(self, correlation_id, mode, token_list):
@@ -242,33 +237,19 @@ class SmartWebSocketV2(object):
                     tokens: list of string
         """
         try:
-            total_tokens = sum(len(token["tokens"]) for token in token_list)
-            quota_limit = 50
-            if total_tokens > quota_limit:
-                raise Exception("Quota exceeded: You can subscribe to a maximum of {} tokens.".format(quota_limit))
-            else:
-                request_data = {
-                    "correlationID": correlation_id,
-                    "action": self.SUBSCRIBE_ACTION,
-                    "params": {
-                        "mode": mode,
-                        "tokenList": token_list
-                    }
+            request_data = {
+                "correlationID": correlation_id,
+                "action": self.UNSUBSCRIBE_ACTION,
+                "params": {
+                    "mode": mode,
+                    "tokenList": token_list
                 }
-
-                if self.input_request_dict.get(mode, None) is None:
-                    self.input_request_dict[mode] = {}
-
-                for token in token_list:
-                    if token['exchangeType'] in self.input_request_dict[mode]:
-                        self.input_request_dict[mode][token['exchangeType']].extend(token["tokens"])
-                    else:
-                        self.input_request_dict[mode][token['exchangeType']] = token["tokens"]
-                self.wsapp.send(json.dumps(request_data))
-                self.RESUBSCRIBE_FLAG = True
-
+            }
+            self.input_request_dict.update(request_data)
+            self.wsapp.send(json.dumps(request_data))
+            self.RESUBSCRIBE_FLAG = True
         except Exception as e:
-            print("Error:", e)
+            logger.exception(f"Error occurred during unsubscribe: {e}")
             raise e
 
     def resubscribe(self):
@@ -290,6 +271,7 @@ class SmartWebSocketV2(object):
                 }
                 self.wsapp.send(json.dumps(request_data))
         except Exception as e:
+            logger.exception(f"Error occurred during resubscribe: {e}")
             raise e
 
     def connect(self):
@@ -310,54 +292,48 @@ class SmartWebSocketV2(object):
                                                 on_pong=self._on_pong)
             self.wsapp.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE}, ping_interval=self.HEART_BEAT_INTERVAL,
                                    ping_payload=self.HEART_BEAT_MESSAGE)
-            # self.start_ping_timer()
         except Exception as e:
+            logger.exception(f"Error occurred during WebSocket connection: {e}")
             raise e
 
     def close_connection(self):
         """
         Closes the connection
         """
-        self.RESUBSCRIBE_FLAG = False
         self.DISCONNECT_FLAG = True
-        # self.HB_THREAD_FLAG = False
         if self.wsapp:
             self.wsapp.close()
-
-    # def run(self):
-    #     while True:
-    #         if not self.HB_THREAD_FLAG:
-    #             break
-    #         self.send_heart_beat()
-    #         time.sleep(self.HEAR_BEAT_INTERVAL)
-
-    def send_heart_beat(self):
-        try:
-            self.wsapp.send(self.HEART_BEAT_MESSAGE)
-        except Exception as e:
-            raise e
-
+                
     def _on_error(self, wsapp, error):
-        # self.HB_THREAD_FLAG = False
         self.RESUBSCRIBE_FLAG = True
         if self.current_retry_attempt < self.MAX_RETRY_ATTEMPT:
-            print("Attempting to resubscribe/reconnect...")
+            logger.warning(f"Attempting to resubscribe/reconnect (Attempt {self.current_retry_attempt + 1})...")
             self.current_retry_attempt += 1
+            if self.retry_strategy == 0: #retry_strategy for simple
+                time.sleep(self.retry_delay)
+            elif self.retry_strategy == 1: #retry_strategy for exponential
+                delay = self.retry_delay * (self.retry_multiplier ** (self.current_retry_attempt - 1))
+                time.sleep(delay)
+            else:
+                logger.exception(f"Invalid retry strategy {self.retry_strategy}")
+                raise Exception(f"Invalid retry strategy {self.retry_strategy}")
             try:
                 self.close_connection()
                 self.connect()
             except Exception as e:
-                print("Error occurred during resubscribe/reconnect:", str(e))
+                logger.exception(f"Error occurred during resubscribe/reconnect: {e}")
                 if hasattr(self, 'on_error'):
                     self.on_error("Reconnect Error", str(e) if str(e) else "Unknown error")
         else:
             self.close_connection()
             if hasattr(self, 'on_error'):
                 self.on_error("Max retry attempt reached", "Connection closed")
+            if self.retry_duration is not None and (self.last_pong_timestamp is not None and time.time() - self.last_pong_timestamp > self.retry_duration * 60):
+                logger.warning("Connection closed due to inactivity.")
+            else:
+                logger.warning("Connection closed due to max retry attempts reached.")
 
     def _on_close(self, wsapp):
-        # self.HB_THREAD_FLAG = False
-        # print(self.wsapp.close_frame)
         self.on_close(wsapp)
 
     def _parse_binary_data(self, binary_data):
@@ -407,6 +383,7 @@ class SmartWebSocketV2(object):
 
             return parsed_data
         except Exception as e:
+            logger.exception(f"Error occurred during binary data parsing: {e}")
             raise e
 
     def _unpack_data(self, binary_data, start, end, byte_format="I"):
@@ -489,8 +466,8 @@ class SmartWebSocketV2(object):
             "depth_20_sell_data": depth_20_sell_data
         }
 
-    # def on_message(self, wsapp, message):
-    #     print(message)
+    def on_message(self, wsapp, message):
+        pass
 
     def on_data(self, wsapp, data):
         pass
