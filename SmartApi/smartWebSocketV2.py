@@ -96,16 +96,30 @@ class SmartWebSocketV2(object):
         logger.info(f"Received message: {message}")
         if message != "pong":
             parsed_message = self._parse_binary_data(message)
-            self.on_message(wsapp, parsed_message)
+            # Check if it's a control message (e.g., heartbeat)
+            if self._is_control_message(parsed_message):
+                self._handle_control_message(parsed_message)
+            else:
+                self.on_data(wsapp, parsed_message)
         else:
             self.on_message(wsapp, message)
+
+    def _is_control_message(self, parsed_message):
+        return "subscription_mode" not in parsed_message
+
+    def _handle_control_message(self, parsed_message):
+        if parsed_message["subscription_mode"] == 0:
+            self._on_pong(self.wsapp, "pong")
+        elif parsed_message["subscription_mode"] == 1:
+            self._on_ping(self.wsapp, "ping")
+        # Invoke on_control_message callback with the control message data
+        if hasattr(self, 'on_control_message'):
+            self.on_control_message(self.wsapp, parsed_message)
 
     def _on_data(self, wsapp, data, data_type, continue_flag):
         if data_type == 2:
             parsed_message = self._parse_binary_data(data)
             self.on_data(wsapp, parsed_message)
-        else:
-            self.on_data(wsapp, data)
 
     def _on_open(self, wsapp):
         if self.RESUBSCRIBE_FLAG:
@@ -465,6 +479,9 @@ class SmartWebSocketV2(object):
         pass
 
     def on_data(self, wsapp, data):
+        pass
+
+    def on_control_message(self, wsapp, message):
         pass
 
     def on_close(self, wsapp):
