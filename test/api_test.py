@@ -213,6 +213,9 @@ def on_data(wsapp, message):
     logger.info("Ticks: {}".format(message))
     close_connection()
 
+def on_control_message(wsapp, message):
+    logger.info(f"Control Message: {message}")
+
 def on_open(wsapp):
     logger.info("on open")
     some_error_condition = False
@@ -239,6 +242,7 @@ sws.on_open = on_open
 sws.on_data = on_data
 sws.on_error = on_error
 sws.on_close = on_close
+sws.on_control_message = on_control_message
 
 sws.connect()
 
