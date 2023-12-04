@@ -286,19 +286,23 @@ class SmartConnect(object):
     def getProfile(self,refreshToken):
         user=self._getRequest("api.user.profile",{"refreshToken":refreshToken})
         return user
-    
-    def placeOrder(self,orderparams):
 
+    def placeOrder(self,orderparams):
         params=orderparams
-       
         for k in list(params.keys()):
             if params[k] is None :
                 del(params[k])
+        response= self._postRequest("api.order.place", params)
+        if response is not None and response.get('status', False):
+            if 'data' in response and response['data'] is not None and 'orderid' in response['data']:
+                orderResponse = response['data']['orderid']
+                return orderResponse
+            else:
+                logger.error(f"Invalid response format: {response}")
+        else:
+            logger.error(f"API request failed: {response}")
+        return None
         
-        orderResponse= self._postRequest("api.order.place", params)['data']['orderid']
-    
-        return orderResponse
-    
     def modifyOrder(self,orderparams):
         params = orderparams
 
