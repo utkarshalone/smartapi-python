@@ -68,8 +68,8 @@ else:
         orderid = smartApi.placeOrder(orderparams)
         logger.info(f"PlaceOrder : {orderid}")
         # Method 2: Place an order and return the full response
-        fullorderresponse = smartApi.placeOrderFullResponse(orderparams)
-        logger.info(f"PlaceOrder : {fullorderresponse}")
+        response = smartApi.placeOrderFullResponse(orderparams)
+        logger.info(f"PlaceOrder : {response}")
     except Exception as e:
         logger.exception(f"Order placement failed: {e}")
 
