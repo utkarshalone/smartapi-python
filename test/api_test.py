@@ -17,7 +17,7 @@ except Exception as e:
 correlation_id = "abcde"
 data = smartApi.generateSession(username, pwd, totp)
 if data['status'] == False:
-    logger.error(f"Invalid Credentials {data}")
+    logger.error(data)
 else:
     # logger.info(f"data: {data}")
     authToken = data['data']['jwtToken']
@@ -47,8 +47,8 @@ else:
     orderid = smartApi.placeOrder(orderparams)
     logger.info(f"PlaceOrder : {orderid}")
     # Method 2: Place an order and return the full response
-    fullorderresponse = smartApi.placeOrderFullResponse(orderparams)
-    logger.info(f"PlaceOrder : {fullorderresponse}")
+    response = smartApi.placeOrderFullResponse(orderparams)
+    logger.info(f"PlaceOrder : {response}")
 
     modifyparams = {
         "variety": "NORMAL",
