@@ -64,8 +64,12 @@ else:
             "stoploss": "0",
             "quantity": "1"
             }
-        orderId=smartApi.placeOrder(orderparams)
-        logger.info(f"PlaceOrder : {orderId}")
+        # Method 1: Place an order and return the order ID
+        orderid = smartApi.placeOrder(orderparams)
+        logger.info(f"PlaceOrder : {orderid}")
+        # Method 2: Place an order and return the full response
+        fullorderresponse = smartApi.placeOrderFullResponse(orderparams)
+        logger.info(f"PlaceOrder : {fullorderresponse}")
     except Exception as e:
         logger.exception(f"Order placement failed: {e}")
 

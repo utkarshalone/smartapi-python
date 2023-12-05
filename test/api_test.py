@@ -43,8 +43,12 @@ else:
         "stoploss": "0",
         "quantity": "1"
     }
+    # Method 1: Place an order and return the order ID
     orderid = smartApi.placeOrder(orderparams)
     logger.info(f"PlaceOrder : {orderid}")
+    # Method 2: Place an order and return the full response
+    fullorderresponse = smartApi.placeOrderFullResponse(orderparams)
+    logger.info(f"PlaceOrder : {fullorderresponse}")
 
     modifyparams = {
         "variety": "NORMAL",
@@ -172,12 +176,12 @@ else:
 
     params = {
         "positions": [{
-            "exchange": "NFO",
-            "qty": 1500,
-            "price": 0,
-            "productType": "CARRYFORWARD",
-            "token": "154388",
-            "tradeType": "SELL"
+        "exchange": "NSE",
+        "qty": 50,
+        "price": 0,
+        "productType": "DELIVERY",
+        "token": "12740",
+        "tradeType": "BUY"
         }]
     }
     margin_api_result=smartApi.getMarginApi(params)

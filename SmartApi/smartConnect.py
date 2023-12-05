@@ -30,6 +30,7 @@ class SmartConnect(object):
         "api.user.profile": "/rest/secure/angelbroking/user/v1/getProfile",
 
         "api.order.place": "/rest/secure/angelbroking/order/v1/placeOrder",
+        "api.order.placefullresponse": "/rest/secure/angelbroking/order/v1/placeOrder",
         "api.order.modify": "/rest/secure/angelbroking/order/v1/modifyOrder",
         "api.order.cancel": "/rest/secure/angelbroking/order/v1/cancelOrder",
         "api.order.book":"/rest/secure/angelbroking/order/v1/getOrderBook",
@@ -302,7 +303,23 @@ class SmartConnect(object):
         else:
             logger.error(f"API request failed: {response}")
         return None
-        
+
+    def placeOrderFullResponse(self,orderparams):
+        params=orderparams
+        for k in list(params.keys()):
+            if params[k] is None :
+                del(params[k])
+        response= self._postRequest("api.order.placefullresponse", params)
+        if response is not None and response.get('status', False):
+            if 'data' in response and response['data'] is not None and 'orderid' in response['data']:
+                orderResponse = response
+                return orderResponse
+            else:
+                logger.error(f"Invalid response format: {response}")
+        else:
+            logger.error(f"API request failed: {response}")
+        return None
+    
     def modifyOrder(self,orderparams):
         params = orderparams
 
