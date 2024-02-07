@@ -93,6 +93,24 @@ class SmartConnect(object):
         self.accept=self.accept
         self.userType=self.userType
         self.sourceID=self.sourceID
+
+        # Create SSL context
+        self.ssl_context = ssl.create_default_context()
+        self.ssl_context.options |= ssl.OP_NO_TLSv1  # Disable TLS 1.0
+        self.ssl_context.options |= ssl.OP_NO_TLSv1_1  # Disable TLS 1.1
+
+        # Configure minimum TLS version to TLS 1.2
+        self.ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+
+        if not disable_ssl:
+            self.reqsession = requests.Session()
+            reqadapter = requests.adapters.HTTPAdapter(**pool)
+            self.reqsession.mount("https://", reqadapter)
+            logger.info(f"in pool")
+        else:
+            # If SSL is disabled, use the default SSL context
+            self.reqsession = requests
+            
         # Create a log folder based on the current date
         log_folder = time.strftime("%Y-%m-%d", time.localtime())
         log_folder_path = os.path.join("logs", log_folder)  # Construct the full path to the log folder
