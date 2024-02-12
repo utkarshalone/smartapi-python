@@ -10,7 +10,7 @@ import os
 import logzero
 from logzero import logger
 import time
-
+import ssl
 from SmartApi.version import __version__, __title__
 
 log = logging.getLogger(__name__)
@@ -104,8 +104,12 @@ class SmartConnect(object):
 
         if not disable_ssl:
             self.reqsession = requests.Session()
-            reqadapter = requests.adapters.HTTPAdapter(**pool)
-            self.reqsession.mount("https://", reqadapter)
+            if pool is not None:
+                reqadapter = requests.adapters.HTTPAdapter(**pool)
+                self.reqsession.mount("https://", reqadapter)
+            else:
+                reqadapter = requests.adapters.HTTPAdapter()
+                self.reqsession.mount("https://", reqadapter)
             logger.info(f"in pool")
         else:
             # If SSL is disabled, use the default SSL context
