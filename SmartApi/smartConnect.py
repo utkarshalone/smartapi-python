@@ -120,7 +120,7 @@ class SmartConnect(object):
         log_folder_path = os.path.join("logs", log_folder)  # Construct the full path to the log folder
         os.makedirs(log_folder_path, exist_ok=True) # Create the log folder if it doesn't exist
         log_path = os.path.join(log_folder_path, "app.log") # Construct the full path to the log file
-        logzero.logfile(log_path, loglevel=logging.INFO)  # Output logs to a date-wise log file
+        logzero.logfile(log_path, loglevel=logging.ERROR)  # Output logs to a date-wise log file
 
         if pool:
             self.reqsession = requests.Session()
@@ -207,6 +207,7 @@ class SmartConnect(object):
                                         proxies=self.proxies)
            
         except Exception as e:
+            logger.error(f"Error occurred while making a {method} request to {url}. Headers: {headers}, Request: {params}, Response: {e}")
             raise e
 
         if self.debug:
@@ -230,7 +231,8 @@ class SmartConnect(object):
                 # native errors
                 exp = getattr(ex, data["error_type"], ex.GeneralException)
                 raise exp(data["message"], code=r.status_code)
-
+            if data.get("success",False) is False : 
+                logger.error(f"Error occurred while making a {method} request to {url}. Error: {data['message']}. URL: {url}, Headers: {headers}, Request: {params}, Response: {data}")
             return data
         elif "csv" in headers["Content-type"]:
             return r.content
