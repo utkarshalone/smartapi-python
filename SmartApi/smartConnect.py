@@ -207,7 +207,7 @@ class SmartConnect(object):
                                         proxies=self.proxies)
            
         except Exception as e:
-            logger.error(f"Error occurred while making a {method} request to {url}. Error: {str(e)}")
+            logger.error(f"Error occurred while making a {method} request to {url}. Headers: {headers}, Request: {params}, Response: {e}")
             raise e
 
         if self.debug:
