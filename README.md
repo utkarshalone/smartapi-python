@@ -193,3 +193,12 @@ else:
     client.connect()
     ########################### SmartWebSocket OrderUpdate Sample Code End Here ###########################
 ```
+##Change-log
+##1.4.5
+- Upgraded TLS Version
+
+##1.4.7
+- Added Error log file
+
+##1.4.8
+- Intgrated EDIS, Brokerage Calculator, Option Greek, TopGainersLosers, PutRatio API
