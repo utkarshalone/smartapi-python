@@ -54,7 +54,15 @@ class SmartConnect(object):
         "api.allholding": "/rest/secure/angelbroking/portfolio/v1/getAllHolding",
 
         "api.individual.order.details": "/rest/secure/angelbroking/order/v1/details/",
-        "api.margin.api" : 'rest/secure/angelbroking/margin/v1/batch'
+        "api.margin.api" : 'rest/secure/angelbroking/margin/v1/batch',
+        "api.estimateCharges" : 'rest/secure/angelbroking/brokerage/v1/estimateCharges',
+        "api.verifyDis" : 'rest/secure/angelbroking/edis/v1/verifyDis',
+        "api.generateTPIN" : 'rest/secure/angelbroking/edis/v1/generateTPIN',
+        "api.getTranStatus" : 'rest/secure/angelbroking/edis/v1/getTranStatus',
+        "api.optionGreek" : 'rest/secure/angelbroking/marketData/v1/optionGreek',
+        "api.gainersLosers" : 'rest/secure/angelbroking/marketData/v1/gainersLosers',
+        "api.putCallRatio" : 'rest/secure/angelbroking/marketData/v1/putCallRatio',
+        "api.oIBuildup" : 'rest/secure/angelbroking/marketData/v1/OIBuildup',
     }
 
     try:
@@ -231,8 +239,8 @@ class SmartConnect(object):
                 # native errors
                 exp = getattr(ex, data["error_type"], ex.GeneralException)
                 raise exp(data["message"], code=r.status_code)
-            if data.get("success",False) is False : 
-                logger.error(f"Error occurred while making a {method} request to {url}. Error: {data['message']}. URL: {url}, Headers: {headers}, Request: {params}, Response: {data}")
+            if data.get("status",False) is False : 
+                logger.error(f"Error occurred while making a {method} request to {url}. Error: {data['message']}. URL: {url}, Headers: {self.requestHeaders()}, Request: {params}, Response: {data}")
             return data
         elif "csv" in headers["Content-type"]:
             return r.content
@@ -506,7 +514,39 @@ class SmartConnect(object):
     def getMarginApi(self,params):
         marginApiResult=self._postRequest("api.margin.api",params)
         return marginApiResult
- 
+    
+    def estimateCharges(self,params):
+        estimateChargesResponse=self._postRequest("api.estimateCharges",params)
+        return estimateChargesResponse
+    
+    def verifyDis(self,params):
+        verifyDisResponse=self._postRequest("api.verifyDis",params)
+        return verifyDisResponse
+    
+    def generateTPIN(self,params):
+        generateTPINResponse=self._postRequest("api.generateTPIN",params)
+        return generateTPINResponse
+    
+    def getTranStatus(self,params):
+        getTranStatusResponse=self._postRequest("api.getTranStatus",params)
+        return getTranStatusResponse
+    
+    def optionGreek(self,params):
+        optionGreekResponse=self._postRequest("api.optionGreek",params)
+        return optionGreekResponse
+    
+    def gainersLosers(self,params):
+        gainersLosersResponse=self._postRequest("api.gainersLosers",params)
+        return gainersLosersResponse
+    
+    def putCallRatio(self):
+        putCallRatioResponse=self._getRequest("api.putCallRatio")
+        return putCallRatioResponse
+
+    def oIBuildup(self,params):
+        oIBuildupResponse=self._postRequest("api.oIBuildup",params)
+        return oIBuildupResponse
+    
     def _user_agent(self):
         return (__title__ + "-python/").capitalize() + __version__   
 
