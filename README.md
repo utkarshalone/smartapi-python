@@ -11,6 +11,18 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install smartap
 pip install -r requirements_dev.txt       # for downloading the other required packages
 ```
 
+Download the following packages
+```bash
+pip install pyotp
+pip install logzero
+pip install websocket-client    
+```
+For Downloading pycryptodome package
+```bash
+pip uninstall pycrypto
+pip install pycryptodome    
+```
+
 ## Usage
 
 ```python
