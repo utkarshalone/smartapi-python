@@ -17,9 +17,9 @@ log = logging.getLogger(__name__)
 
 class SmartConnect(object):
     #_rootUrl = "https://openapisuat.angelbroking.com"
-    _rootUrl="https://apiconnect.angelbroking.com" #prod endpoint
+    _rootUrl="https://apiconnect.angelone.in" #prod endpoint
     #_login_url ="https://smartapi.angelbroking.com/login"
-    _login_url="https://smartapi.angelbroking.com/publisher-login" #prod endpoint
+    _login_url="https://smartapi.angelone.in/publisher-login" #prod endpoint
     _default_timeout = 7  # In seconds
 
     _routes = {
