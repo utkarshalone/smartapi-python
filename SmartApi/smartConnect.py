@@ -49,6 +49,7 @@ class SmartConnect(object):
         "api.gtt.list":"/rest/secure/angelbroking/gtt/v1/ruleList",
 
         "api.candle.data":"/rest/secure/angelbroking/historical/v1/getCandleData",
+        "api.oi.data":"/rest/secure/angelbroking/historical/v1/getOIData",
         "api.market.data":"/rest/secure/angelbroking/market/v1/quote",
         "api.search.scrip": "/rest/secure/angelbroking/order/v1/searchScrip",
         "api.allholding": "/rest/secure/angelbroking/portfolio/v1/getAllHolding",
@@ -63,6 +64,8 @@ class SmartConnect(object):
         "api.gainersLosers" : 'rest/secure/angelbroking/marketData/v1/gainersLosers',
         "api.putCallRatio" : 'rest/secure/angelbroking/marketData/v1/putCallRatio',
         "api.oIBuildup" : 'rest/secure/angelbroking/marketData/v1/OIBuildup',
+        "api.nseIntraday" : 'rest/secure/angelbroking/marketData/v1/nseIntraday',
+        "api.bseIntraday" : 'rest/secure/angelbroking/marketData/v1/bseIntraday',
     }
 
     try:
@@ -462,6 +465,14 @@ class SmartConnect(object):
         getCandleDataResponse=self._postRequest("api.candle.data",historicDataParams)
         return getCandleDataResponse
     
+    def getOIData(self,historicOIDataParams):
+        params=historicOIDataParams
+        for k in list(params.keys()):
+            if params[k] is None:
+                del(params[k])
+        getOIDataResponse=self._postRequest("api.oi.data",historicOIDataParams)
+        return getOIDataResponse
+    
     def getMarketData(self,mode,exchangeTokens):
         params={
             "mode":mode,
@@ -543,10 +554,19 @@ class SmartConnect(object):
         putCallRatioResponse=self._getRequest("api.putCallRatio")
         return putCallRatioResponse
 
+    def nseIntraday(self):
+        nseIntraday=self._getRequest("api.nseIntraday")
+        return nseIntraday
+    
+    def bseIntraday(self):
+        bseIntraday=self._getRequest("api.bseIntraday")
+        return bseIntraday
+
     def oIBuildup(self,params):
         oIBuildupResponse=self._postRequest("api.oIBuildup",params)
         return oIBuildupResponse
     
+   
     def _user_agent(self):
         return (__title__ + "-python/").capitalize() + __version__   
 
