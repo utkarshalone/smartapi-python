@@ -353,7 +353,7 @@ class SmartConnect(object):
                 logger.error(f"Invalid response format: {response}")
         else:
             logger.error(f"API request failed: {response}")
-        return orderResponse
+        return response
     
     def modifyOrder(self,orderparams):
         params = orderparams
