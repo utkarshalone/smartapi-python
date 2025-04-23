@@ -4,11 +4,13 @@ on:
     branches:
       - main
   pull_request:
+    branches:
+      - main
     types: [opened, synchronize, reopened]
 jobs:
   build:
     name: Build and analyze
-    runs-on: [self-hosted]
+    runs-on: aws-ec2
     steps:
       - uses: actions/checkout@v4
         with:
