@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     name: Build and analyze
-    runs-on: aws-ec2
+    runs-on: [on-prem-vm,gpx]
     steps:
       - uses: actions/checkout@v4
         with:
