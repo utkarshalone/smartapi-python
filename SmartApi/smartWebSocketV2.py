@@ -298,8 +298,7 @@ class SmartWebSocketV2(object):
                                                 on_error=self._on_error, on_close=self._on_close, on_data=self._on_data,
                                                 on_ping=self._on_ping,
                                                 on_pong=self._on_pong)
-            self.wsapp.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE}, ping_interval=self.HEART_BEAT_INTERVAL,
-                                   ping_payload=self.HEART_BEAT_MESSAGE)
+            self.wsapp.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE}, ping_interval=self.HEART_BEAT_INTERVAL)
         except Exception as e:
             logger.error(f"Error occurred during WebSocket connection: {e}")
             raise e

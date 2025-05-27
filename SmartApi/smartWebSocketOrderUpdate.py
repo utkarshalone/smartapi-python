@@ -74,8 +74,7 @@ class SmartWebSocketOrderUpdate(object):
             self.wsapp = websocket.WebSocketApp(self.WEBSOCKET_URI, header=headers, on_open=self.on_open,
                                                 on_error=self.on_error, on_close=self.on_close,
                                                 on_data=self.on_data, on_ping=self.on_ping, on_pong=self.on_pong)
-            self.wsapp.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE}, ping_interval=self.HEARTBEAT_INTERVAL_SECONDS,
-                                   ping_payload=self.HEARTBEAT_MESSAGE)
+            self.wsapp.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE}, ping_interval=self.HEARTBEAT_INTERVAL_SECONDS)
         except Exception as e:
             logger.error("Error connecting to WebSocket: %s", e)
             self.retry_connect()
